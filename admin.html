@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Absensi</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; font-family: 'Segoe UI', Arial, sans-serif; color: #fff;
+    background: linear-gradient(160deg, #0d47a1 0%, #0a1f4d 45%, #000000 100%);
+    background-attachment: fixed;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 20px 16px 50px; }
+  h1 { margin: 6px 0 16px; }
+  h3 { margin-top: 0; }
+  .card {
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18);
+    border-radius: 16px; padding: 16px; margin-bottom: 16px;
+  }
+  input, select {
+    padding: 10px; border-radius: 10px; border: 1px solid #455a64; background: #0b1530; color: #fff; font-size: 15px;
+  }
+  button {
+    padding: 10px 16px; border: 0; border-radius: 10px; font-weight: 600; color: #fff; cursor: pointer;
+    background: linear-gradient(135deg, #1976d2, #0d47a1);
+  }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .stat { border-radius: 14px; padding: 14px; text-align: center; background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.15); }
+  .stat .angka { font-size: 34px; font-weight: 800; }
+  .stat .persen { font-size: 18px; opacity: .9; }
+  .hadir { color: #00e676; } .sakit { color: #ffd740; } .izin { color: #40c4ff; } .alfa { color: #ff5252; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 8px; text-align: left; border-bottom: 1px solid rgba(255,255,255,.12); }
+  th { background: rgba(13,71,161,.6); }
+  .scroll { overflow-x: auto; max-height: 420px; overflow-y: auto; }
+  .tag-telat { color: #ff5252; font-weight: 800; }
+  .tag-pulang { color: #82b1ff; }
+  #login { max-width: 360px; margin: 80px auto; text-align: center; }
+  #app { display: none; }
+  #qrBox { background: #fff; padding: 12px; display: inline-block; border-radius: 10px; margin-top: 10px; }
+  #pesan { margin-top: 8px; min-height: 20px; }
+  a { color: #90caf9; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- LOGIN -->
+  <div id="login" class="card">
+    <h3>🔒 Login Admin</h3>
+    <div class="row" style="justify-content:center">
+      <input type="password" id="pin" placeholder="Masukkan PIN">
+      <button onclick="login()">Masuk</button>
+    </div>
+    <div id="errLogin" style="margin-top:10px;color:#ff5252"></div>
+  </div>
+
+  <!-- APLIKASI -->
+  <div id="app">
+    <h1>📊 Dashboard Kehadiran</h1>
+
+    <div class="card row">
+      <label>Tanggal:</label>
+      <input type="date" id="tgl" onchange="muat()">
+      <button onclick="muat()">Refresh</button>
+      <span id="info" style="opacity:.7"></span>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="hadir">Hadir</div><div class="angka hadir" id="nHadir">0</div><div class="persen" id="pHadir">0%</div><small id="nTelat" style="opacity:.7"></small></div>
+      <div class="stat"><div class="sakit">Sakit</div><div class="angka sakit" id="nSakit">0</div><div class="persen" id="pSakit">0%</div></div>
+      <div class="stat"><div class="izin">Izin</div><div class="angka izin" id="nIzin">0</div><div class="persen" id="pIzin">0%</div></div>
+      <div class="stat"><div class="alfa">Alfa</div><div class="angka alfa" id="nAlfa">0</div><div class="persen" id="pAlfa">0%</div></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h3>Diagram Batang</h3>
+      <canvas id="grafik" height="110"></canvas>
+    </div>
+
+    <div class="card">
+      <h3>Input Sakit / Izin</h3>
+      <div class="row">
+        <select id="selSiswa"></select>
+        <select id="selStatus"><option>Sakit</option><option>Izin</option></select>
+        <button onclick="simpanManual()">Simpan</button>
+      </div>
+      <div id="pesan"></div>
+    </div>
+
+    <div class="card">
+      <h3>Data Absensi</h3>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Jam</th><th>ID</th><th>Nama</th><th>Kelas</th><th>Keterangan</th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Buat QR Code Siswa</h3>
+      <div class="row">
+        <select id="selQR" onchange="buatQR()"></select>
+        <button onclick="window.print()">🖨 Cetak</button>
+      </div>
+      <div id="qrBox"></div>
+      <div id="qrNama" style="margin-top:6px;font-weight:700"></div>
+    </div>
+
+    <div style="text-align:center"><a href="index.html">← Menu Utama</a></div>
+  </div>
+</div>
+
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbzH_Fyk2EuMT3d3xUjdut4j67wloPgMDee2b4JKJXEo8pSSFVfr3KJCHI5TozMatxjcLw/exec';
+
+  async function api(action, payload) {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+    });
+    const j = await res.json();
+    if (!j.ok) throw new Error(j.error);
+    return j.data;
+  }
+
+  let PIN = '';
+  let chart = null;
+
+  function login() {
+    PIN = document.getElementById('pin').value;
+    document.getElementById('tgl').value = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Jakarta' });
+    document.getElementById('errLogin').textContent = 'Memeriksa...';
+    api('rekap', { pin: PIN, tanggal: document.getElementById('tgl').value })
+      .then(d => {
+        document.getElementById('login').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        isiSiswa(d.siswa);
+        render(d);
+        setInterval(muat, 20000);   // auto refresh tiap 20 detik
+      })
+      .catch(e => { document.getElementById('errLogin').textContent = e.message; });
+  }
+
+  function muat() {
+    api('rekap', { pin: PIN, tanggal: document.getElementById('tgl').value })
+      .then(render)
+      .catch(e => alert(e.message));
+  }
+
+  function persen(n, total) { return total ? (n / total * 100).toFixed(1) + '%' : '0%'; }
+
+  function render(d) {
+    document.getElementById('nHadir').textContent = d.hadir;
+    document.getElementById('nSakit').textContent = d.sakit;
+    document.getElementById('nIzin').textContent = d.izin;
+    document.getElementById('nAlfa').textContent = d.alfa;
+    document.getElementById('pHadir').textContent = persen(d.hadir, d.total);
+    document.getElementById('pSakit').textContent = persen(d.sakit, d.total);
+    document.getElementById('pIzin').textContent = persen(d.izin, d.total);
+    document.getElementById('pAlfa').textContent = persen(d.alfa, d.total);
+    document.getElementById('nTelat').textContent = '(' + d.terlambat + ' terlambat)';
+    document.getElementById('info').textContent = 'Total siswa: ' + d.total + ' | Sudah pulang: ' + d.pulang;
+
+    // Diagram batang
+    const data = [d.hadir, d.sakit, d.izin, d.alfa];
+    const pct = data.map(n => persen(n, d.total));
+    if (chart) { chart.data.datasets[0].data = data; chart.data.datasets[0].pct = pct; chart.update(); }
+    else {
+      chart = new Chart(document.getElementById('grafik'), {
+        type: 'bar',
+        plugins: [{
+          id: 'labelBatang',
+          afterDatasetsDraw(c) {
+            const ctx = c.ctx, ds = c.data.datasets[0];
+            c.getDatasetMeta(0).data.forEach((bar, i) => {
+              ctx.save();
+              ctx.fillStyle = '#fff';
+              ctx.font = 'bold 14px Segoe UI, Arial';
+              ctx.textAlign = 'center';
+              ctx.fillText(ds.data[i] + ' (' + ds.pct[i] + ')', bar.x, bar.y - 8);
+              ctx.restore();
+            });
+          }
+        }],
+        data: {
+          labels: ['Hadir', 'Sakit', 'Izin', 'Alfa'],
+          datasets: [{
+            label: 'Jumlah siswa', data: data, pct: pct,
+            backgroundColor: ['#00e676', '#ffd740', '#40c4ff', '#ff5252'], borderRadius: 8
+          }]
+        },
+        options: {
+          plugins: { legend: { labels: { color: '#fff' } } },
+          scales: {
+            x: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,.1)' } },
+            y: { beginAtZero: true, grace: '15%', ticks: { color: '#fff', precision: 0 }, grid: { color: 'rgba(255,255,255,.1)' } }
+          }
+        }
+      });
+    }
+
+    // Tabel
+    const tb = document.getElementById('tbody');
+    tb.innerHTML = '';
+    d.rows.forEach(r => {
+      let cls = '';
+      if (r.keterangan === 'TERLAMBAT!!!') cls = 'tag-telat';
+      if (r.keterangan === 'Waktu Pulang') cls = 'tag-pulang';
+      tb.innerHTML += '<tr><td>' + r.jam + '</td><td>' + r.id + '</td><td>' + r.nama +
+        '</td><td>' + r.kelas + '</td><td class="' + cls + '">' + r.keterangan + '</td></tr>';
+    });
+    d.alfaList.forEach(s => {
+      tb.innerHTML += '<tr><td>-</td><td>' + s.id + '</td><td>' + s.nama + '</td><td>' + s.kelas +
+        '</td><td class="alfa">Alfa</td></tr>';
+    });
+  }
+
+  function isiSiswa(list) {
+    ['selSiswa', 'selQR'].forEach(idSel => {
+      const s = document.getElementById(idSel);
+      s.innerHTML = '';
+      list.forEach(x => {
+        const o = document.createElement('option');
+        o.value = x.id; o.textContent = x.nama + ' (' + x.kelas + ')';
+        o.dataset.nama = x.nama;
+        s.appendChild(o);
+      });
+    });
+    buatQR();
+  }
+
+  function simpanManual() {
+    const id = document.getElementById('selSiswa').value;
+    const st = document.getElementById('selStatus').value;
+    const p = document.getElementById('pesan');
+    p.textContent = 'Menyimpan...';
+    api('manual', { pin: PIN, id: id, status: st })
+      .then(() => { p.textContent = '✅ Tersimpan'; muat(); })
+      .catch(e => { p.textContent = '⚠ ' + e.message; });
+  }
+
+  function buatQR() {
+    const sel = document.getElementById('selQR');
+    if (!sel.value) return;
+    const box = document.getElementById('qrBox');
+    box.innerHTML = '';
+    new QRCode(box, { text: sel.value, width: 200, height: 200 });
+    document.getElementById('qrNama').textContent = sel.options[sel.selectedIndex].dataset.nama + ' - ID: ' + sel.value;
+  }
+</script>
+</body>
+</html>

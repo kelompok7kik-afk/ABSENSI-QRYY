@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Absensi QR Digital</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    font-family: 'Segoe UI', Arial, sans-serif; color: #fff;
+    background: linear-gradient(160deg, #0d47a1 0%, #0a1f4d 45%, #000000 100%);
+    background-attachment: fixed;
+  }
+  .wrap { width: 100%; max-width: 440px; padding: 24px 18px; text-align: center; }
+  .logo { font-size: 56px; }
+  h1 { margin: 6px 0 4px; font-size: 26px; }
+  .sub { opacity: .75; margin-bottom: 28px; }
+  #jam { font-size: 30px; font-weight: 700; letter-spacing: 2px; margin-bottom: 24px; }
+  a.pilih {
+    display: block; text-decoration: none; color: #fff; margin-bottom: 16px; padding: 22px 16px;
+    border-radius: 18px; border: 1px solid rgba(255,255,255,.2);
+    background: rgba(255,255,255,.08); backdrop-filter: blur(6px);
+    transition: transform .15s, background .15s;
+  }
+  a.pilih:hover, a.pilih:active { transform: scale(1.03); background: rgba(25,118,210,.45); }
+  a.pilih .ikon { font-size: 40px; }
+  a.pilih .judul { font-size: 22px; font-weight: 700; margin-top: 4px; }
+  a.pilih .ket { font-size: 13px; opacity: .75; margin-top: 2px; }
+  .foot { margin-top: 20px; font-size: 12px; opacity: .5; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">📷</div>
+  <h1>Absensi QR Digital</h1>
+  <div class="sub">Silakan pilih peran kamu</div>
+  <div id="jam">--:--:--</div>
+
+  <a class="pilih" href="scan.html">
+    <div class="ikon">🎓</div>
+    <div class="judul">Siswa</div>
+    <div class="ket">Scan QR untuk absen masuk / pulang</div>
+  </a>
+
+  <a class="pilih" href="admin.html">
+    <div class="ikon">👨‍🏫</div>
+    <div class="judul">Guru / Admin</div>
+    <div class="ket">Lihat presentase & diagram kehadiran</div>
+  </a>
+
+  <div class="foot">Admin memerlukan PIN</div>
+</div>
+
+<script>
+  setInterval(() => {
+    document.getElementById('jam').textContent =
+      new Date().toLocaleTimeString('id-ID', { hour12: false, timeZone: 'Asia/Jakarta' });
+  }, 1000);
+</script>
+</body>
+</html>
